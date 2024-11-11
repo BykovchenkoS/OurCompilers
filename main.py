@@ -8,10 +8,12 @@ import sys
 
 def main():
 
+    print("hello this is our lab work! enter text: ")
     visitor = OurVisitor()
 
+    # TODO обработать выход из компилятора
     while True:
-        input_text = input("enter text: ")
+        input_text = input("> ")
         input_stream = InputStream(input_text)
 
         lexer = OurLangLexer(input_stream)

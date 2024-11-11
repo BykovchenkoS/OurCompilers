@@ -8,7 +8,7 @@ run:
 
 ## in docker:
 build: 
-```antlr4 -Dlanguage=Python3 -o util -listener -visitor OurLang.g4```
+```antlr4 -Dlanguage=Python3 -o util -visitor OurLang.g4```
 
 run: 
 ```python3 main.py```

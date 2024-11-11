@@ -5,17 +5,21 @@ from util.OurLangParser import OurLangParser
 import sys
 
 class OurLangPrintListener(OurLangListener):
-    def enterHello(self, ctx):
-        print("Hello: %s" % ctx.ID())
+    def exitPrintStatement(self, ctx):
+        number = ctx.NUMBER().getText()
+        print(number)
 
 def main():
-    lexer = OurLangLexer(StdinStream())
+    input_stream = StdinStream()
+    lexer = OurLangLexer(input_stream)
     stream = CommonTokenStream(lexer)
     parser = OurLangParser(stream)
-    tree = parser.hello()
-    printer = OurLangPrintListener()
+
+    tree = parser.program()
+
+    listener = OurLangPrintListener()
     walker = ParseTreeWalker()
-    walker.walk(printer, tree)
+    walker.walk(listener, tree)
 
 if __name__ == '__main__':
     main()

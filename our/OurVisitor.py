@@ -24,21 +24,26 @@ class OurVisitor(OurLangVisitor):
         print(f"var {var_name} = {value}")
 
     def visitIfStatement(self, ctx: OurLangParser.IfStatementContext):
-        print(f"Visiting if-statement with condition: {ctx.expression()}")
         condition = self.visit(ctx.expression())
-        print(f"Condition result: {condition}")
 
         if condition:
-            print("Executing if block")
             for statement in ctx.statement():
                 self.visit(statement)
+            return
+
+        if ctx.elifStatement():
+            for elif_statement in ctx.elifStatement():
+                elif_condition = self.visit(elif_statement.expression())
+
+                if elif_condition:
+                    for statement in elif_statement.statement():
+                        self.visit(statement)
+                    return
 
         if ctx.elseStatement():
-            print("Executing else block")
             for statement in ctx.elseStatement().statement():
                 self.visit(statement)
-        else:
-            print("No else block found, skipping")
+            return
 
     def visitNumberExpr(self, ctx: OurLangParser.NumberExprContext):
         return int(ctx.NUMBER().getText())

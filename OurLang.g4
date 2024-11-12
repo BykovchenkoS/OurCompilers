@@ -14,9 +14,13 @@ printStatement: 'print' expression ';' ;
 // оператор присваивания
 assignmentStatement: IDENTIFIER '=' expression ';' ;
 
-// ветвление if-else
+// ветвление if-elif-else
 ifStatement
-    : 'if' '(' expression ')' '{' statement* '}' (elseStatement)?
+    : 'if' '(' expression ')' '{' statement* '}' (elifStatement)* (elseStatement)?
+    ;
+
+elifStatement
+    : 'elif' '(' expression ')' '{' statement* '}'
     ;
 
 elseStatement
@@ -40,7 +44,6 @@ IDENTIFIER       : [a-zA-Z_] [a-zA-Z_0-9]* ;  // идентификаторы (�
 NUMBER           : [0-9]+ ;                   // целые числа
 STRING           : '"' ('.' | ~'"')* '"';     // строка, может содержать экранированные символы
 
-ELSE             : 'else' ;
 
 // операторы
 PLUS             : '+' ;
@@ -61,3 +64,6 @@ NEQ              : '!=' ;
 
 // пропуск пробелов и переводов строк
 SPACE            : [ \r\n\t]+ -> skip;
+
+COMMENT_NESTED: '/*' .*? '*/' -> skip;
+COMMENT_INLINE: '//' ~[\n\r]* -> skip ;

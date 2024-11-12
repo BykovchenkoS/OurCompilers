@@ -1,6 +1,5 @@
 from antlr4 import *
 from util.OurLangLexer import OurLangLexer
-# from util.OurLangListener import OurLangListener
 from util.OurLangParser import OurLangParser
 from our.OurVisitor import OurVisitor
 import sys
@@ -27,6 +26,7 @@ def main():
             visitor.visit(tree)
         except Exception as e:
             print(f"Error: {e}")
+
 
 if __name__ == '__main__':
     main()

@@ -7,23 +7,26 @@ import sys
 
 
 def main():
-
-    print("hello this is our lab work! enter text: ")
+    print("Hello, this is our lab work! Enter text (type 'exit' to quit):")
     visitor = OurVisitor()
 
-    # TODO обработать выход из компилятора
     while True:
         input_text = input("> ")
-        input_stream = InputStream(input_text)
 
+        if input_text.strip().lower() == "exit":
+            print("Exiting compiler.")
+            break
+
+        input_stream = InputStream(input_text)
         lexer = OurLangLexer(input_stream)
         stream = CommonTokenStream(lexer)
         parser = OurLangParser(stream)
 
-        tree = parser.program()
-
-        visitor.visit(tree)
-
+        try:
+            tree = parser.program()
+            visitor.visit(tree)
+        except Exception as e:
+            print(f"Error: {e}")
 
 if __name__ == '__main__':
     main()

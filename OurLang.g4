@@ -3,16 +3,18 @@ grammar OurLang;
 // начальное правило грамматики
 program: (statement)* EOF;
 
-statement: printStatement            // оператор печати
-         | assignmentStatement       // оператор присваивания
-         | ifStatement              // оператор ветвления
+statement: printStatement ';'             // оператор печати
+         | assignmentStatement ';'        // оператор присваивания
+         | ifStatement                    // оператор ветвления
+         | forStatement                   // цикл for
+         | whileStatement                 // цикл while
          ;
 
 // оператор печати
-printStatement: 'print' expression ';' ;
+printStatement: 'print' expression;
 
 // оператор присваивания
-assignmentStatement: IDENTIFIER '=' expression ';' ;
+assignmentStatement: IDENTIFIER '=' expression;
 
 // ветвление if-elif-else
 ifStatement
@@ -25,6 +27,16 @@ elifStatement
 
 elseStatement
     : 'else' '{' statement* '}'
+    ;
+
+// цикл for
+forStatement
+    : 'for' '(' declaration=assignmentStatement ';' expression ';' assignment=assignmentStatement ')' '{' statement* '}'
+    ;
+
+// цикл while
+whileStatement
+    : 'while' '(' expression ')' '{' statement* '}'
     ;
 
 // выражения с приоритетом и операциями

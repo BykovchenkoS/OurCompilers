@@ -8,16 +8,16 @@ class OurVisitor(OurLangVisitor):
     def __init__(self):
         self.variables = {}
 
-    def visitProgram(self, ctx:OurLangParser.ProgramContext):
+    def visitProgram(self, ctx: OurLangParser.ProgramContext):
         return self.visitChildren(ctx)
 
-    def visitStatement(self, ctx:OurLangParser.StatementContext):
+    def visitStatement(self, ctx: OurLangParser.StatementContext):
         return self.visitChildren(ctx)
 
-    def visitPrintStatement(self, ctx:OurLangParser.PrintStatementContext):
+    def visitPrintStatement(self, ctx: OurLangParser.PrintStatementContext):
         print(self.visit(ctx.expression()))
 
-    def visitAssignmentStatement(self, ctx:OurLangParser.AssignmentStatementContext):
+    def visitAssignmentStatement(self, ctx: OurLangParser.AssignmentStatementContext):
         var_name = ctx.IDENTIFIER().getText()
         value = self.visit(ctx.expression())
         variables[var_name] = value
@@ -73,7 +73,7 @@ class OurVisitor(OurLangVisitor):
             right = int(right)
             return left + right if ctx.op.type == OurLangParser.PLUS else left - right
 
-    def visitMulDivExpr(self, ctx:OurLangParser.MulDivExprContext):
+    def visitMulDivExpr(self, ctx: OurLangParser.MulDivExprContext):
         left = int(self.visit(ctx.expression(0)))
         right = int(self.visit(ctx.expression(1)))
         return left * right if ctx.op.type == OurLangParser.MUL else left // right
@@ -96,13 +96,25 @@ class OurVisitor(OurLangVisitor):
         else:
             raise ValueError(f"Unknown comparison operator: {ctx.op.type}")
 
-    def visitLogicalExpr(self, ctx:OurLangParser.LogicalExprContext):
+    def visitLogicalExpr(self, ctx: OurLangParser.LogicalExprContext):
         left = int(self.visit(ctx.expression(0)))
         right = int(self.visit(ctx.expression(1)))
         return int(left and right) if ctx.op.type == OurLangParser.AND else int(left or right)
 
-    def visitNotExpr(self, ctx:OurLangParser.NotExprContext):
+    def visitNotExpr(self, ctx: OurLangParser.NotExprContext):
         return int(not self.visit(ctx.expression()))
 
-    def visitParenExpr(self, ctx:OurLangParser.ParenExprContext):
+    def visitParenExpr(self, ctx: OurLangParser.ParenExprContext):
         return self.visit(ctx.expression())
+
+    def visitForStatement(self, ctx: OurLangParser.ForStatementContext):
+        self.visit(ctx.declaration)
+        while self.visit(ctx.expression()):
+            for statement in ctx.statement():
+                self.visit(statement)
+            self.visit(ctx.assignment)
+
+    def visitWhileStatement(self, ctx: OurLangParser.WhileStatementContext):
+        while self.visit(ctx.expression()):
+            for statement in ctx.statement():
+                self.visit(statement)

@@ -55,6 +55,7 @@ expression: expression op=(MUL | DIV | POW | MOD) expression        # mulDivExpr
 IDENTIFIER       : [a-zA-Z_] [a-zA-Z_0-9]* ;  // идентификаторы (переменные)
 NUMBER           : [0-9]+ ;                   // целые числа
 STRING           : '"' ('.' | ~'"')* '"';     // строка, может содержать экранированные символы
+BOOLEAN          : 'true' | 'false' ;         // логический тип данных (true или false)
 
 
 // операторы

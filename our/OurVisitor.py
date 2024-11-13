@@ -22,8 +22,7 @@ class OurVisitor(OurLangVisitor):
         print(f"var {var_name} = {value}")
 
     def visitIfStatement(self, ctx: OurLangParser.IfStatementContext):
-        condition = self.visit(ctx.expression())
-
+        condition = bool(self.visit(ctx.expression()))
         if condition:
             for statement in ctx.statement():
                 self.visit(statement)
@@ -31,8 +30,7 @@ class OurVisitor(OurLangVisitor):
 
         if ctx.elifStatement():
             for elif_statement in ctx.elifStatement():
-                elif_condition = self.visit(elif_statement.expression())
-
+                elif_condition = bool(self.visit(elif_statement.expression()))
                 if elif_condition:
                     for statement in elif_statement.statement():
                         self.visit(statement)
@@ -51,6 +49,13 @@ class OurVisitor(OurLangVisitor):
 
     def visitIdExpr(self, ctx: OurLangParser.IdExprContext):
         var_name = ctx.IDENTIFIER().getText()
+
+        # Обработка булевых значений
+        if var_name == "true":
+            return True
+        elif var_name == "false":
+            return False
+
         value = variables.get(var_name, None)
         if value is None:
             print(f"Warning: Variable '{var_name}' is not defined.")
@@ -88,8 +93,14 @@ class OurVisitor(OurLangVisitor):
             raise ValueError(f"Unknown comparison operator: {ctx.op.type}")
 
     def visitComparisonExpr(self, ctx: OurLangParser.ComparisonExprContext):
-        left = int(self.visit(ctx.expression(0)))
-        right = int(self.visit(ctx.expression(1)))
+        left = self.visit(ctx.expression(0))
+        right = self.visit(ctx.expression(1))
+
+        # Приведение значений к булевому типу, если это необходимо
+        if not isinstance(left, (int, bool)):
+            left = bool(left)
+        if not isinstance(right, (int, bool)):
+            right = bool(right)
 
         op_map = {
             OurLangParser.GT: left > right,
@@ -106,24 +117,33 @@ class OurVisitor(OurLangVisitor):
             raise ValueError(f"Unknown comparison operator: {ctx.op.type}")
 
     def visitLogicalExpr(self, ctx: OurLangParser.LogicalExprContext):
-        left = int(self.visit(ctx.expression(0)))
-        right = int(self.visit(ctx.expression(1)))
-        return int(left and right) if ctx.op.type == OurLangParser.AND else int(left or right)
+        left = self.visit(ctx.expression(0))
+        right = self.visit(ctx.expression(1))
+
+        if not isinstance(left, bool):
+            left = bool(left)
+        if not isinstance(right, bool):
+            right = bool(right)
+
+        return left and right if ctx.op.type == OurLangParser.AND else left or right
 
     def visitNotExpr(self, ctx: OurLangParser.NotExprContext):
-        return int(not self.visit(ctx.expression()))
+        value = self.visit(ctx.expression())
+        if not isinstance(value, bool):
+            value = bool(value)
+        return not value
 
     def visitParenExpr(self, ctx: OurLangParser.ParenExprContext):
         return self.visit(ctx.expression())
 
     def visitForStatement(self, ctx: OurLangParser.ForStatementContext):
         self.visit(ctx.declaration)
-        while self.visit(ctx.expression()):
+        while bool(self.visit(ctx.expression())):
             for statement in ctx.statement():
                 self.visit(statement)
             self.visit(ctx.assignment)
 
     def visitWhileStatement(self, ctx: OurLangParser.WhileStatementContext):
-        while self.visit(ctx.expression()):
+        while bool(self.visit(ctx.expression())):
             for statement in ctx.statement():
                 self.visit(statement)

@@ -5,8 +5,6 @@ variables = {}
 
 
 class OurVisitor(OurLangVisitor):
-    def __init__(self):
-        self.variables = {}
 
     def visitProgram(self, ctx: OurLangParser.ProgramContext):
         return self.visitChildren(ctx)
@@ -76,7 +74,18 @@ class OurVisitor(OurLangVisitor):
     def visitMulDivExpr(self, ctx: OurLangParser.MulDivExprContext):
         left = int(self.visit(ctx.expression(0)))
         right = int(self.visit(ctx.expression(1)))
-        return left * right if ctx.op.type == OurLangParser.MUL else left // right
+
+        op_map = {
+            OurLangParser.MUL: left * right,
+            OurLangParser.DIV: left // right,
+            OurLangParser.POW: pow(left, right),
+            OurLangParser.MOD: left % right
+        }
+
+        if ctx.op.type in op_map:
+            return op_map[ctx.op.type]
+        else:
+            raise ValueError(f"Unknown comparison operator: {ctx.op.type}")
 
     def visitComparisonExpr(self, ctx: OurLangParser.ComparisonExprContext):
         left = int(self.visit(ctx.expression(0)))

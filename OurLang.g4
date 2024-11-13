@@ -40,15 +40,15 @@ whileStatement
     ;
 
 // выражения с приоритетом и операциями
-expression: expression op=(MUL | DIV) expression      # mulDivExpr
-          | expression op=(PLUS | MINUS) expression   # addSubExpr
+expression: expression op=(MUL | DIV | POW | MOD) expression        # mulDivExpr
+          | expression op=(PLUS | MINUS) expression                 # addSubExpr
           | expression op=(GT | LT | GE | LE | EQ | NEQ) expression # comparisonExpr
-          | expression op=(AND | OR) expression       # logicalExpr
-          | '!' expression                            # notExpr
-          | '(' expression ')'                        # parenExpr
-          | NUMBER                                    # numberExpr
-          | IDENTIFIER                                # idExpr
-          | STRING                                    # stringExpr
+          | expression op=(AND | OR) expression                     # logicalExpr
+          | '!' expression                                          # notExpr
+          | '(' expression ')'                                      # parenExpr
+          | NUMBER                                                  # numberExpr
+          | IDENTIFIER                                              # idExpr
+          | STRING                                                  # stringExpr
           ;
 
 // токены
@@ -58,13 +58,16 @@ STRING           : '"' ('.' | ~'"')* '"';     // строка, может сод
 
 
 // операторы
-PLUS             : '+' ;
-MINUS            : '-' ;
 MUL              : '*' ;
 DIV              : '/' ;
+POW              : '^' ;
+MOD              : '%' ;
+
+PLUS             : '+' ;
+MINUS            : '-' ;
+
 AND              : '&&' ;
 OR               : '||' ;
-NOT              : '!' ;
 
 // операторы сравнения
 GT               : '>' ;

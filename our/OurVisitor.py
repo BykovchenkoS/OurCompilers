@@ -19,7 +19,6 @@ class OurVisitor(OurLangVisitor):
         var_name = ctx.IDENTIFIER().getText()
         value = self.visit(ctx.expression())
         variables[var_name] = value
-        print(f"var {var_name} = {value}")
 
     def visitIfStatement(self, ctx: OurLangParser.IfStatementContext):
         condition = bool(self.visit(ctx.expression()))

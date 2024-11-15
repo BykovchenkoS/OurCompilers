@@ -44,8 +44,8 @@ expression: expression op=(MUL | DIV | POW | MOD) expression        # mulDivExpr
           | expression op=(PLUS | MINUS) expression                 # addSubExpr
           | expression op=(GT | LT | GE | LE | EQ | NEQ) expression # comparisonExpr
           | expression op=(AND | OR) expression                     # logicalExpr
-          | '!' expression                                          # notExpr
           | '(' expression ')'                                      # parenExpr
+          | '!' expression                                          # notExpr
           | NUMBER                                                  # numberExpr
           | IDENTIFIER                                              # idExpr
           | STRING                                                  # stringExpr
@@ -83,3 +83,5 @@ SPACE            : [ \r\n\t]+ -> skip;
 
 COMMENT_NESTED: '/*' .*? '*/' -> skip;
 COMMENT_INLINE: '//' ~[\n\r]* -> skip ;
+
+// asdff

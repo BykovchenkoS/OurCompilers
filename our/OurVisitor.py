@@ -2,23 +2,44 @@ from util.OurLangParser import OurLangParser
 from util.OurLangVisitor import OurLangVisitor
 
 variables = {}
+labels, t_var_num = 1, 1
+lines = []
+
+
+def get_var_num():
+    global t_var_num
+    t_var_num += 1
+    return f"t{t_var_num - 1}"
+
+
+def fill_file():
+    with open('file.txt', 'w') as f:
+        for line in lines:
+            f.write(line)
+
 
 
 class OurVisitor(OurLangVisitor):
 
     def visitProgram(self, ctx: OurLangParser.ProgramContext):
-        return self.visitChildren(ctx)
+        self.visitChildren(ctx)
+        fill_file()
+        return
+        # return self.visitChildren(ctx)
 
     def visitStatement(self, ctx: OurLangParser.StatementContext):
         return self.visitChildren(ctx)
 
     def visitPrintStatement(self, ctx: OurLangParser.PrintStatementContext):
-        print(self.visit(ctx.expression()))
+        value = self.visit(ctx.expression())
+        lines.append(f"print {value}\n")
+        print(value)
 
     def visitAssignmentStatement(self, ctx: OurLangParser.AssignmentStatementContext):
         var_name = ctx.IDENTIFIER().getText()
-        value = self.visit(ctx.expression())
+        value, t_value = self.visit(ctx.expression())
         variables[var_name] = value
+        lines.append(f"{var_name} = {t_value}\n")
 
     def visitIfStatement(self, ctx: OurLangParser.IfStatementContext):
         condition = bool(self.visit(ctx.expression()))
@@ -57,7 +78,7 @@ class OurVisitor(OurLangVisitor):
 
         value = variables.get(var_name, None)
         if value is None:
-            print(f"Warning: Variable '{var_name}' is not defined.")
+            print(f"Warning: Variable '{var_name}' is not defined.\n")
             return 0
         return value
 
@@ -65,19 +86,28 @@ class OurVisitor(OurLangVisitor):
         left = self.visit(ctx.expression(0))
         right = self.visit(ctx.expression(1))
 
+        t = get_var_num()
         if isinstance(left, str) or isinstance(right, str):
             if ctx.op.type == OurLangParser.PLUS:
+                lines.append(f"{t} = {left} + {right}")
                 return str(left) + str(right)
             elif ctx.op.type == OurLangParser.MINUS:
-                raise ValueError("Cannot subtract strings.")
+                lines.append(f"{t} = {left} - {right}")
+                raise ValueError("Cannot subtract strings.\n")
         else:
             left = int(left)
             right = int(right)
-            return left + right if ctx.op.type == OurLangParser.PLUS else left - right
+            if ctx.op.type == OurLangParser.PLUS:
+                lines.append(f"{t} = {left} + {right}\n")
+                return left + right, t
+            else:
+                lines.append(f"{t} = {left} - {right}\n")
+                return left - right, t
 
     def visitMulDivExpr(self, ctx: OurLangParser.MulDivExprContext):
         left = int(self.visit(ctx.expression(0)))
         right = int(self.visit(ctx.expression(1)))
+        t = get_var_num()
 
         op_map = {
             OurLangParser.MUL: left * right,
@@ -87,13 +117,16 @@ class OurVisitor(OurLangVisitor):
         }
 
         if ctx.op.type in op_map:
-            return op_map[ctx.op.type]
+            operator = OurLangParser.literalNames[ctx.op.type].strip("\'")
+            lines.append(f"{t} = {left} {operator} {right}\n")
+            return op_map[ctx.op.type], t
         else:
-            raise ValueError(f"Unknown comparison operator: {ctx.op.type}")
+            raise ValueError(f"Unknown comparison operator: {ctx.op.type}\n")
 
     def visitComparisonExpr(self, ctx: OurLangParser.ComparisonExprContext):
         left = self.visit(ctx.expression(0))
         right = self.visit(ctx.expression(1))
+        t = get_var_num()
 
         # Приведение значений к булевому типу, если это необходимо
         if not isinstance(left, (int, bool)):
@@ -111,25 +144,34 @@ class OurVisitor(OurLangVisitor):
         }
 
         if ctx.op.type in op_map:
-            return op_map[ctx.op.type]
+            lines.append(f"{t} = {left} {ctx.op.type} {right}\n")
+            return op_map[ctx.op.type], t
         else:
             raise ValueError(f"Unknown comparison operator: {ctx.op.type}")
 
     def visitLogicalExpr(self, ctx: OurLangParser.LogicalExprContext):
         left = self.visit(ctx.expression(0))
         right = self.visit(ctx.expression(1))
+        t = get_var_num()
 
         if not isinstance(left, bool):
             left = bool(left)
         if not isinstance(right, bool):
             right = bool(right)
 
-        return left and right if ctx.op.type == OurLangParser.AND else left or right
+        if ctx.op.type == OurLangParser.AND:
+            lines.append(f"{t} = {left} && {right}\n")
+            return left and right, t
+        else:
+            lines.append(f"{t} = {left} || {right}\n")
+            return left or right, t
 
     def visitNotExpr(self, ctx: OurLangParser.NotExprContext):
         value = self.visit(ctx.expression())
+        t = get_var_num()
         if not isinstance(value, bool):
             value = bool(value)
+        lines.append(f"{t} = !{value}\n")
         return not value
 
     def visitParenExpr(self, ctx: OurLangParser.ParenExprContext):

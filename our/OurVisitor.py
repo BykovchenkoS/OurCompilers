@@ -18,6 +18,7 @@ def get_args(left, right):
         right_val, right_tmp = int(right), int(right)
     return left_val, left_tmp, right_val, right_tmp
 
+
 def get_var_num():
     global t_var_num
     t_var_num += 1
@@ -46,15 +47,21 @@ class OurVisitor(OurLangVisitor):
         if isinstance(value, tuple):
             value_val, value_tmp = value[0], value[1]
         else:
-            value_val, value_tmp = value
+            value_val, value_tmp = value, value
         lines.append(f"print {value_tmp}\n")
         print(value_val)
 
     def visitAssignmentStatement(self, ctx: OurLangParser.AssignmentStatementContext):
         var_name = ctx.IDENTIFIER().getText()
-        value, t_value = self.visit(ctx.expression())
-        variables[var_name] = value
-        lines.append(f"{var_name} = {t_value}\n")
+        value = self.visit(ctx.expression())
+
+        if isinstance(value, tuple):
+            value_val, value_tmp = value[0], value[1]
+        else:
+            value_val, value_tmp = value, value
+
+        variables[var_name] = value_val
+        lines.append(f"{var_name} = {value_tmp}\n")
 
     def visitIfStatement(self, ctx: OurLangParser.IfStatementContext):
         condition = bool(self.visit(ctx.expression()))
@@ -83,6 +90,7 @@ class OurVisitor(OurLangVisitor):
         return ctx.STRING().getText()[1:-1]
 
     def visitIdExpr(self, ctx: OurLangParser.IdExprContext):
+
         var_name = ctx.IDENTIFIER().getText()
 
         # Обработка булевых значений
@@ -161,23 +169,21 @@ class OurVisitor(OurLangVisitor):
         right = self.visit(ctx.expression(1))
         t = get_var_num()
 
-        # Приведение значений к булевому типу, если это необходимо
-        if not isinstance(left, (int, bool)):
-            left = bool(left)
-        if not isinstance(right, (int, bool)):
-            right = bool(right)
+        vals = get_args(left, right)
+        left_val, left_tmp, right_val, right_tmp = vals[0], vals[1], vals[2], vals[3]
 
         op_map = {
-            OurLangParser.GT: left > right,
-            OurLangParser.LT: left < right,
-            OurLangParser.GE: left >= right,
-            OurLangParser.LE: left <= right,
-            OurLangParser.EQ: left == right,
-            OurLangParser.NEQ: left != right
+            OurLangParser.GT: left_val > right_val,
+            OurLangParser.LT: left_val < right_val,
+            OurLangParser.GE: left_val >= right_val,
+            OurLangParser.LE: left_val <= right_val,
+            OurLangParser.EQ: left_val == right_val,
+            OurLangParser.NEQ: left_val != right_val
         }
 
         if ctx.op.type in op_map:
-            lines.append(f"{t} = {left} {ctx.op.type} {right}\n")
+            operator = OurLangParser.literalNames[ctx.op.type].strip("\'")
+            lines.append(f"{t} = {left_tmp} {operator} {right_tmp}\n")
             return op_map[ctx.op.type], t
         else:
             raise ValueError(f"Unknown comparison operator: {ctx.op.type}")
@@ -185,27 +191,36 @@ class OurVisitor(OurLangVisitor):
     def visitLogicalExpr(self, ctx: OurLangParser.LogicalExprContext):
         left = self.visit(ctx.expression(0))
         right = self.visit(ctx.expression(1))
+
         t = get_var_num()
 
-        if not isinstance(left, bool):
-            left = bool(left)
-        if not isinstance(right, bool):
-            right = bool(right)
+        if isinstance(left, tuple):
+            left_val, left_tmp = bool(left[0]), str(left[1])
+        else:
+            left_val, left_tmp = bool(left), bool(left)
+
+        if isinstance(right, tuple):
+            right_val, right_tmp = bool(right[0]), str(right[1])
+        else:
+            right_val, right_tmp = bool(right), bool(right)
+
 
         if ctx.op.type == OurLangParser.AND:
-            lines.append(f"{t} = {left} && {right}\n")
-            return left and right, t
+            lines.append(f"{t} = {left_tmp} && {right_val}\n")
+            return left_val and right_val, t
         else:
-            lines.append(f"{t} = {left} || {right}\n")
-            return left or right, t
+            lines.append(f"{t} = {left_tmp} || {right_val}\n")
+            return left_val or right_val, t
 
     def visitNotExpr(self, ctx: OurLangParser.NotExprContext):
         value = self.visit(ctx.expression())
         t = get_var_num()
-        if not isinstance(value, bool):
-            value = bool(value)
-        lines.append(f"{t} = !{value}\n")
-        return not value
+        if isinstance(value, tuple):
+            value_val, value_tmp = bool(value[0]), str(value[1])
+        else:
+            value_val, value_tmp = bool(value), bool(value)
+        lines.append(f"{t} = !{value_tmp}\n")
+        return not value_val
 
     def visitParenExpr(self, ctx: OurLangParser.ParenExprContext):
         return self.visit(ctx.expression())

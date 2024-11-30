@@ -1,3 +1,5 @@
+import time
+
 from util.OurLangParser import OurLangParser
 from util.OurLangVisitor import OurLangVisitor
 
@@ -25,6 +27,12 @@ def get_var_num():
     return f"t{t_var_num - 1}"
 
 
+def get_label():
+    global labels
+    labels += 1
+    return f"L{labels - 1}"
+
+
 def fill_file():
     with open('file.txt', 'w') as f:
         for line in lines:
@@ -48,7 +56,7 @@ class OurVisitor(OurLangVisitor):
             value_val, value_tmp = value[0], value[1]
         else:
             value_val, value_tmp = value, value
-        lines.append(f"print {value_tmp}\n")
+        lines.append(f"print {value_val}\n")
         print(value_val)
 
     def visitAssignmentStatement(self, ctx: OurLangParser.AssignmentStatementContext):
@@ -64,24 +72,50 @@ class OurVisitor(OurLangVisitor):
         lines.append(f"{var_name} = {value_tmp}\n")
 
     def visitIfStatement(self, ctx: OurLangParser.IfStatementContext):
-        condition = bool(self.visit(ctx.expression()))
-        if condition:
+        condition = self.visit(ctx.expression())
+        if isinstance(condition, tuple):
+            condition_val, condition_tmp = bool(condition[0]), str(condition[1])
+        else:
+            condition_val, condition_tmp = bool(condition), str(condition)
+
+        label_start = get_label()
+        lines.append(f"ifFalse {condition_tmp} goto {label_start}\n")
+
+        label_end = get_label()
+        lines.append(f"goto {label_end}\n")
+
+        lines.append(f"{label_start}:\n")
+        if condition_val:
             for statement in ctx.statement():
                 self.visit(statement)
+            lines.append(f"goto {label_end}\n")
             return
+
 
         if ctx.elifStatement():
             for elif_statement in ctx.elifStatement():
-                elif_condition = bool(self.visit(elif_statement.expression()))
-                if elif_condition:
+                elif_condition = self.visit(elif_statement.expression())
+
+                if isinstance(elif_condition, tuple):
+                    elif_condition_val, elif_condition_tmp = bool(elif_condition[0]), str(elif_condition[1])
+                else:
+                    elif_condition_val, elif_condition_tmp = bool(elif_condition), str(elif_condition)
+                elif_label = get_label()
+                lines.append(f"ifFalse {elif_condition_tmp} goto {elif_label}\n")
+                lines.append(f"{elif_label}:\n")
+                if elif_condition_val:
                     for statement in elif_statement.statement():
                         self.visit(statement)
+                    lines.append(f"goto {label_end}\n")
                     return
 
         if ctx.elseStatement():
             for statement in ctx.elseStatement().statement():
                 self.visit(statement)
+            lines.append(f"goto {label_end}\n")
             return
+
+        lines.append(f"{label_end}:\n")
 
     def visitNumberExpr(self, ctx: OurLangParser.NumberExprContext):
         return int(ctx.NUMBER().getText())
@@ -167,6 +201,7 @@ class OurVisitor(OurLangVisitor):
     def visitComparisonExpr(self, ctx: OurLangParser.ComparisonExprContext):
         left = self.visit(ctx.expression(0))
         right = self.visit(ctx.expression(1))
+
         t = get_var_num()
 
         vals = get_args(left, right)
@@ -227,12 +262,24 @@ class OurVisitor(OurLangVisitor):
 
     def visitForStatement(self, ctx: OurLangParser.ForStatementContext):
         self.visit(ctx.declaration)
-        while bool(self.visit(ctx.expression())):
+        label_start = get_label()
+        label_end = get_label()
+        lines.append(f"{label_start}:\n")
+        lines.append(f"ifFalse {self.visit(ctx.expression())[1]} goto {label_end}\n")
+        while self.visit(ctx.expression())[0]:
             for statement in ctx.statement():
                 self.visit(statement)
             self.visit(ctx.assignment)
+        lines.append(f"goto {label_start}\n")
+        lines.append(f"{label_end}:\n")
 
     def visitWhileStatement(self, ctx: OurLangParser.WhileStatementContext):
-        while bool(self.visit(ctx.expression())):
+        label_start = get_label()
+        label_end = get_label()
+        lines.append(f"ifFalse {self.visit(ctx.expression())[1]} goto {label_end}\n")
+        lines.append(f"{label_start}:\n")
+        while self.visit(ctx.expression())[0]:
             for statement in ctx.statement():
                 self.visit(statement)
+        lines.append(f"goto {label_start}\n")
+        lines.append(f"{label_end}:\n")

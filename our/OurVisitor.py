@@ -6,6 +6,18 @@ labels, t_var_num = 1, 1
 lines = []
 
 
+def get_args(left, right):
+    if isinstance(left, tuple):
+        left_val, left_tmp = int(left[0]), str(left[1])
+    else:
+        left_val, left_tmp = int(left), int(left)
+
+    if isinstance(right, tuple):
+        right_val, right_tmp = int(right[0]), str(right[1])
+    else:
+        right_val, right_tmp = int(right), int(right)
+    return left_val, left_tmp, right_val, right_tmp
+
 def get_var_num():
     global t_var_num
     t_var_num += 1
@@ -25,15 +37,18 @@ class OurVisitor(OurLangVisitor):
         self.visitChildren(ctx)
         fill_file()
         return
-        # return self.visitChildren(ctx)
 
     def visitStatement(self, ctx: OurLangParser.StatementContext):
         return self.visitChildren(ctx)
 
     def visitPrintStatement(self, ctx: OurLangParser.PrintStatementContext):
         value = self.visit(ctx.expression())
-        lines.append(f"print {value}\n")
-        print(value)
+        if isinstance(value, tuple):
+            value_val, value_tmp = value[0], value[1]
+        else:
+            value_val, value_tmp = value
+        lines.append(f"print {value_tmp}\n")
+        print(value_val)
 
     def visitAssignmentStatement(self, ctx: OurLangParser.AssignmentStatementContext):
         var_name = ctx.IDENTIFIER().getText()
@@ -85,40 +100,58 @@ class OurVisitor(OurLangVisitor):
     def visitAddSubExpr(self, ctx: OurLangParser.AddSubExprContext):
         left = self.visit(ctx.expression(0))
         right = self.visit(ctx.expression(1))
-
         t = get_var_num()
+
+        # Сложение строк
         if isinstance(left, str) or isinstance(right, str):
-            if ctx.op.type == OurLangParser.PLUS:
-                lines.append(f"{t} = {left} + {right}")
-                return str(left) + str(right)
-            elif ctx.op.type == OurLangParser.MINUS:
-                lines.append(f"{t} = {left} - {right}")
-                raise ValueError("Cannot subtract strings.\n")
-        else:
-            left = int(left)
-            right = int(right)
-            if ctx.op.type == OurLangParser.PLUS:
-                lines.append(f"{t} = {left} + {right}\n")
-                return left + right, t
+
+            if isinstance(left, tuple):
+                left_val, left_tmp = str(left[0]), str(left[1])
             else:
-                lines.append(f"{t} = {left} - {right}\n")
-                return left - right, t
+                left_val, left_tmp = str(left), str(left)
+
+            if isinstance(right, tuple):
+                right_val, right_tmp = str(right[0]), str(right[1])
+            else:
+                right_val, right_tmp = str(right), str(right)
+
+            if ctx.op.type == OurLangParser.PLUS:
+                lines.append(f"{t} = {left_tmp} + {right_tmp}\n")
+                return str(left_val) + str(right_val)
+            elif ctx.op.type == OurLangParser.MINUS:
+                raise ValueError("Cannot subtract strings.\n")
+
+        # Сложение чисел
+        else:
+
+            vals = get_args(left, right)
+            left_val, left_tmp, right_val, right_tmp = vals[0], vals[1], vals[2], vals[3]
+
+            if ctx.op.type == OurLangParser.PLUS:
+                lines.append(f"{t} = {left_tmp} + {right_tmp}\n")
+                return left_val + right_val, t
+            else:
+                lines.append(f"{t} = {left_tmp} - {right_tmp}\n")
+                return left_val - right_val, t
 
     def visitMulDivExpr(self, ctx: OurLangParser.MulDivExprContext):
-        left = int(self.visit(ctx.expression(0)))
-        right = int(self.visit(ctx.expression(1)))
+        left = self.visit(ctx.expression(0))
+        right = self.visit(ctx.expression(1))
         t = get_var_num()
 
+        vals = get_args(left, right)
+        left_val, left_tmp, right_val, right_tmp = vals[0], vals[1], vals[2], vals[3]
+
         op_map = {
-            OurLangParser.MUL: left * right,
-            OurLangParser.DIV: left // right,
-            OurLangParser.POW: pow(left, right),
-            OurLangParser.MOD: left % right
+            OurLangParser.MUL: left_val * right_val,
+            OurLangParser.DIV: left_val // right_val,
+            OurLangParser.POW: pow(left_val, right_val),
+            OurLangParser.MOD: left_val % right_val
         }
 
         if ctx.op.type in op_map:
             operator = OurLangParser.literalNames[ctx.op.type].strip("\'")
-            lines.append(f"{t} = {left} {operator} {right}\n")
+            lines.append(f"{t} = {left_tmp} {operator} {right_tmp}\n")
             return op_map[ctx.op.type], t
         else:
             raise ValueError(f"Unknown comparison operator: {ctx.op.type}\n")
